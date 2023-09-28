@@ -23,7 +23,9 @@ public partial class Walker : Node
 	public float maxLinearSteps = 6;
 	private float stepsSinceTurn = 0;
 
-	private List<Vector2I> StepHistory = new List<Vector2I>();
+	private HashSet<Vector2I> StepHistory = new HashSet<Vector2I>();
+
+
 
 	private Vector2I pos;
 
@@ -81,7 +83,7 @@ public partial class Walker : Node
 		return nextDirection;
 	}
 
-	public List<Vector2I> Walk(float steps)
+	public HashSet<Vector2I> Walk(float steps)
 	{
 		GenRoom(pos);
 		StepHistory.Add(pos);

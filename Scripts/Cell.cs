@@ -3,13 +3,7 @@ using System;
 
 public partial class Cell : Node
 {
-	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
-	{
-	}
+	public Vector2I coords;
 
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta)
-	{
-	}
+	public bool isRoom;
 }

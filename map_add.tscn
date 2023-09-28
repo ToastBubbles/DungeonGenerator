@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://bt68c77syqrr4"]
+
+[ext_resource type="Texture2D" uid="uid://clwqq7ds3erss" path="res://Doors.png" id="1_r81ec"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wyrwq"]
+texture = ExtResource("1_r81ec")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+3:0/0 = 0
+4:0/0 = 0
+5:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_e6c8a"]
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("TileSetAtlasSource_wyrwq")
+
+[node name="MapAdd" type="TileMap"]
+tile_set = SubResource("TileSet_e6c8a")
+cell_quadrant_size = 32
+format = 2
+layer_0/z_index = 1

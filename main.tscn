@@ -1,9 +1,13 @@
-[gd_scene load_steps=3 format=3 uid="uid://bn07mlipo1m0q"]
+[gd_scene load_steps=4 format=3 uid="uid://bn07mlipo1m0q"]
 
 [ext_resource type="PackedScene" uid="uid://sdsf0gsf6sd2" path="res://map.tscn" id="1_8uk1p"]
 [ext_resource type="Script" path="res://main.cs" id="1_quk2m"]
+[ext_resource type="PackedScene" uid="uid://bt68c77syqrr4" path="res://map_add.tscn" id="2_3bwcn"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_quk2m")
+
+[node name="MapAdd" parent="." instance=ExtResource("2_3bwcn")]
+position = Vector2(0, 300)
 
 [node name="Map" parent="." instance=ExtResource("1_8uk1p")]
