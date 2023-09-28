@@ -17,10 +17,10 @@ public partial class Walker : Node
 	Random rand = new Random();
 
 	[Export]
-	public int dirChangeChance = 30;
+	public int dirChangeChance = 40;
 
 	[Export]
-	public float maxLinearSteps = 4;
+	public float maxLinearSteps = 6;
 	private float stepsSinceTurn = 0;
 
 	private List<Vector2I> StepHistory = new List<Vector2I>();
@@ -77,11 +77,13 @@ public partial class Walker : Node
 			}
 		}
 		stepsSinceTurn = 0;
+		GenRoom(pos);
 		return nextDirection;
 	}
 
 	public List<Vector2I> Walk(float steps)
 	{
+		GenRoom(pos);
 		StepHistory.Add(pos);
 
 		float stepsTaken = 0;
@@ -90,9 +92,9 @@ public partial class Walker : Node
 
 		while (stepsTaken < steps)
 		{
-			
 
-			if (stepsSinceTurn >= 4 || rand.Next(100) < dirChangeChance)
+
+			if (stepsSinceTurn >= maxLinearSteps && rand.Next(100) < dirChangeChance)
 			{
 				direction = ChangeDirection(direction);
 
@@ -114,8 +116,28 @@ public partial class Walker : Node
 
 
 		}
+		GenRoom(pos);
 
 		return StepHistory;
+
+	}
+
+	private void GenRoom(Vector2I position)
+	{
+		Vector2I size = new Vector2I(rand.Next(4) + 2, rand.Next(4) + 2);
+		Vector2I topLeftCorner = position - new Vector2I((int)Mathf.Ceil(size[0] / 2), (int)Mathf.Ceil(size[1] / 2));
+
+		for (int iy = 0; iy < size.Y; iy++)
+		{
+			for (int ix = 0; ix < size.X; ix++)
+			{
+				Vector2I newStep = topLeftCorner + new Vector2I(iy, ix);
+				if (borders.HasPoint(newStep))
+				{
+					StepHistory.Add(newStep);
+				}
+			}
+		}
 
 	}
 }
