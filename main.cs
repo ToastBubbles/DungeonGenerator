@@ -59,8 +59,12 @@ public partial class main : Node2D
 			tileMap.SetCellsTerrainConnect(layer, roomArray, 0, 0);
 
 		}
-		Godot.Collections.Array<Vector2I> hallArray = new Godot.Collections.Array<Vector2I>(hallTiles);
-		tileMap.SetCellsTerrainConnect(1, hallArray, 0, 0);
+		foreach (Hall hall in halls)
+		{
+			Godot.Collections.Array<Vector2I> hallArray = new Godot.Collections.Array<Vector2I>(hall.tiles);
+			tileMap.SetCellsTerrainConnect(1, hallArray, 0, 0);
+		}
+
 	}
 
 	private void SetRoomTypes()
@@ -177,12 +181,25 @@ public partial class main : Node2D
 		//any deadend halls are also removed
 
 		List<Hall> hallsToRemove = new List<Hall>();
+		List<Vector2I> connectionIDS = new List<Vector2I>();
 
 		foreach (Hall hall in halls)
 		{
-			if (hall.connectingRoom1 == null || hall.connectingRoom2 == null)
+			if (hall.connectingRoom1 == null || hall.connectingRoom2 == null || hall.connectingRoom1 == hall.connectingRoom2)
 			{
 				hallsToRemove.Add(hall);
+			}
+			else
+			{
+				Vector2I connectionID = new Vector2I(hall.connectingRoom1.id, hall.connectingRoom2.id);
+				if (connectionIDS.Contains(connectionID))
+				{
+					hallsToRemove.Add(hall);
+				}
+				else
+				{
+					connectionIDS.Add(connectionID);
+				}
 			}
 
 		}
@@ -190,6 +207,12 @@ public partial class main : Node2D
 		if (hallsToRemove.Count > 0)
 		{
 			GD.Print("Need to remove this many dead-beat halls: ", hallsToRemove.Count);
+			foreach (Hall hall in hallsToRemove)
+			{
+				halls.Remove(hall);
+
+			}
+
 		}
 
 
@@ -419,29 +442,7 @@ public partial class main : Node2D
 			}
 		}
 	}
-	// private void CrawlRoomNeighbors(Vector2I tile, Room room, HashSet<Vector2I> visited)
-	// {
-	// 	visited.Add(tile);
-	// 	room.tiles.Add(tile);
 
-	// 	// Define the possible neighboring tiles (e.g., up, down, left, right)
-	// 	Vector2I[] neighbors = new Vector2I[]
-	// 	{
-	// 		tile + Vector2I.Up,
-	// 		tile + Vector2I.Down,
-	// 		tile + Vector2I.Left,
-	// 		tile + Vector2I.Right
-	// 	};
-
-	// 	foreach (Vector2I neighbor in neighbors)
-	// 	{
-	// 		if (map.Contains(neighbor) && !visited.Contains(neighbor))
-	// 		{
-	// 			CrawlRoomNeighbors(neighbor, room, visited);
-
-	// 		}
-	// 	}
-	// }
 
 	public override void _Input(InputEvent @event)
 	{
