@@ -15,6 +15,7 @@ public partial class Hall : Node
 
     public Room connectingRoom2 { get; set; }
 
+    public Hall() { }
     public Hall(Room room1, Room room2, int id)
     {
         connectingRoom1 = room1;
