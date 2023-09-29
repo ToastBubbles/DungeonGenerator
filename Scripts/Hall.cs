@@ -15,6 +15,10 @@ public partial class Hall : Node
 
     public Room connectingRoom2 { get; set; }
 
+    public Door connectingDoor1 { get; set; }
+
+    public Door connectingDoor2 { get; set; }//optional
+
     public Hall() { }
     public Hall(Room room1, Room room2, int id)
     {

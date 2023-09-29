@@ -24,13 +24,6 @@ public partial class main : Node2D
 
 	List<Room> rooms = new List<Room>();
 
-	Vector2I doorLeft = new Vector2I(0, 0);
-	Vector2I doorRight = new Vector2I(1, 0);
-	Vector2I doorTop = new Vector2I(2, 0);
-	Vector2I doorBottom = new Vector2I(3, 0);
-
-	Vector2I doorTopBottom = new Vector2I(4, 0);
-	Vector2I doorLeftRight = new Vector2I(5, 0);
 	public override void _Ready()
 	{
 		tileMap = GetNode<TileMap>("Map");
@@ -63,18 +56,37 @@ public partial class main : Node2D
 		{
 			Godot.Collections.Array<Vector2I> hallArray = new Godot.Collections.Array<Vector2I>(hall.tiles);
 			tileMap.SetCellsTerrainConnect(1, hallArray, 0, 0);
+			if (hall.connectingDoor1 != null) doorMap.SetCell(0, hall.connectingDoor1.coords, 0, ConvertDoorDirection(hall.connectingDoor1));
+			if (hall.connectingDoor2 != null) doorMap.SetCell(0, hall.connectingDoor2.coords, 0, ConvertDoorDirection(hall.connectingDoor2));
 		}
 
 	}
+	private Vector2I ConvertDoorDirection(Door door)
+	{
 
+		switch (door.direction)
+		{
+			case DoorDirection.Up:
+				return new Vector2I(2, 0);
+			case DoorDirection.Down:
+				return new Vector2I(3, 0);
+			case DoorDirection.Left:
+				return new Vector2I(0, 0);
+			case DoorDirection.Right:
+				return new Vector2I(1, 0);
+			case DoorDirection.UpDown:
+				return new Vector2I(4, 0);
+			case DoorDirection.LeftRight:
+				return new Vector2I(5, 0);
+			default:
+				return new Vector2I(0, 0);
+		}
+	}
 	private void SetRoomTypes()
 	{
 		//Starting Room is already set
 
 		FindFarthestRoom(startingPos, rooms).roomType = RoomType.Boss;
-
-
-
 
 	}
 
@@ -145,7 +157,7 @@ public partial class main : Node2D
 			RegenLevel();
 		}
 
-		IterateCells(hallTiles, true);
+		IterateCells(hallTiles);
 
 		foreach (Vector2I tile in hallTiles)
 		{
@@ -227,19 +239,35 @@ public partial class main : Node2D
 		//these coords are then used to identify which rooms the hall connects to.
 		Vector2I side1 = hall.tiles.First();
 		Vector2I side2 = hall.tiles.First();
+		Door door1 = new Door
+		{
+			id = 0, //fix this
+			parentHall = hall,
+			coords = side1,
+		};
 		if (hall.tiles.Count == 1)
 		{
-			// Vector2I checker = side1 + Vector2I.Up;
 			foreach (Room room in rooms)
 			{
 				if (room.tiles.Contains(side1 + Vector2I.Up) || room.tiles.Contains(side1 + Vector2I.Left))
 				{
+					if (room.tiles.Contains(side1 + Vector2I.Up))
+					{
+						door1.direction = DoorDirection.UpDown;
+					}
+					else
+					{
+						door1.direction = DoorDirection.LeftRight;
+					}
 					hall.connectingRoom1 = room;
 				}
 				if (room.tiles.Contains(side2 + Vector2I.Down) || room.tiles.Contains(side2 + Vector2I.Right))
 				{
 					hall.connectingRoom2 = room;
 				}
+				hall.connectingDoor1 = door1;
+
+				if (hall.connectingRoom1 != null && hall.connectingRoom2 != null) break;
 
 			}
 		}
@@ -268,18 +296,31 @@ public partial class main : Node2D
 
 			bool isHorizontalHall = side1.X != side2.X;
 
+			door1.coords = side1;
+			Door door2 = new Door
+			{
+				id = 0, //fix this
+				parentHall = hall,
+				coords = side2,
+			};
 
 			if (isHorizontalHall)
 			{
+				door1.direction = DoorDirection.Left;
+				door2.direction = DoorDirection.Right;
 				side1 += Vector2I.Left;
 				side2 += Vector2I.Right;
 			}
 			else
 			{
+				door1.direction = DoorDirection.Up;
+				door2.direction = DoorDirection.Down;
 				side1 += Vector2I.Up;
 				side2 += Vector2I.Down;
 
 			}
+			hall.connectingDoor1 = door1;
+			hall.connectingDoor2 = door2;
 
 			foreach (Room room in rooms)
 			{
@@ -293,31 +334,6 @@ public partial class main : Node2D
 				}
 			}
 		}
-
-
-		// 	Vector2I side1 = hall.tiles.First();
-		// 	Vector2I side2 = hall.tiles.First();
-		// 	Vector2I[] neighbors = new Vector2I[]
-		// {
-		// 		side1 + Vector2I.Up,
-		// 		side1 + Vector2I.Down,
-		// 		side1 + Vector2I.Left,
-		// 		side1 + Vector2I.Right
-		// };
-
-		// 	int visitTiles = 0;
-		// 	while (visitTiles < hall.tiles.Count)
-		// 	{
-		// 		foreach (Vector2I neighbor in neighbors)
-		// 		{
-		// 			if (hall.tiles.Contains(neighbor))
-		// 			{
-
-		// 				visitTiles++;
-		// 			}
-		// 		}
-		// 	}
-
 	}
 
 	private int GenRoomId()
@@ -352,7 +368,7 @@ public partial class main : Node2D
 
 
 
-	private void IterateCells(HashSet<Vector2I> set, bool placingDoors = false)
+	private void IterateCells(HashSet<Vector2I> set)
 	{
 
 
@@ -362,60 +378,24 @@ public partial class main : Node2D
 			bool isEmptyDown = false;
 			bool isEmptyLeft = false;
 			bool isEmptyRight = false;
-			int connectingTiles = 4;
-			if (!set.Contains(tile + Vector2I.Up))
-			{
-				isEmptyUp = true;
-				connectingTiles--;
-			}
-			if (!set.Contains(tile + Vector2I.Down))
-			{
-				isEmptyDown = true;
-				connectingTiles--;
-			}
-			if (!set.Contains(tile + Vector2I.Right))
-			{
-				isEmptyRight = true;
-				connectingTiles--;
-			}
-			if (!set.Contains(tile + Vector2I.Left))
-			{
-				isEmptyLeft = true;
-				connectingTiles--;
-			}
-			if (!placingDoors)
-			{
 
-				if (isEmptyUp && isEmptyDown || isEmptyLeft && isEmptyRight)
-				{
-					map.Remove(tile);
-					hallTiles.Add(tile);
-				}
+			if (!set.Contains(tile + Vector2I.Up)) isEmptyUp = true;
 
-			}
-			else
+			if (!set.Contains(tile + Vector2I.Down)) isEmptyDown = true;
+
+			if (!set.Contains(tile + Vector2I.Right)) isEmptyRight = true;
+
+			if (!set.Contains(tile + Vector2I.Left)) isEmptyLeft = true;
+
+
+			if (isEmptyUp && isEmptyDown || isEmptyLeft && isEmptyRight)
 			{
-				if (connectingTiles == 0)
-				{
-					if (!map.Contains(tile + Vector2I.Up))
-					{
-						doorMap.SetCell(0, tile, 0, doorLeftRight);
-					}
-					else
-					{
-						doorMap.SetCell(0, tile, 0, doorTopBottom);
-					}
-				}
-				else if (connectingTiles == 1)
-				{
-
-					if (!isEmptyUp) doorMap.SetCell(0, tile, 0, doorBottom);
-					if (!isEmptyDown) doorMap.SetCell(0, tile, 0, doorTop);
-					if (!isEmptyLeft) doorMap.SetCell(0, tile, 0, doorRight);
-					if (!isEmptyRight) doorMap.SetCell(0, tile, 0, doorLeft);
-
-				}
+				map.Remove(tile);
+				hallTiles.Add(tile);
 			}
+
+
+
 		}
 	}
 
