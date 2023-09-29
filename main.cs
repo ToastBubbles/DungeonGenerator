@@ -6,6 +6,9 @@ public partial class main : Node2D
 {
 	TileMap tileMap;
 	TileMap doorMap;
+
+	[Export]
+	public int minimumRooms = 6;
 	[Export]
 	Rect2 borders = new Rect2(0, 0, 100, 40);
 	[Export]
@@ -13,7 +16,9 @@ public partial class main : Node2D
 	[Export]
 	float steps = 200;
 	HashSet<Vector2I> map;
-	List<Vector2I> halls = new List<Vector2I>();
+	HashSet<Vector2I> halls = new HashSet<Vector2I>();
+
+	List<Room> rooms = new List<Room>();
 
 	Vector2I doorLeft = new Vector2I(0, 0);
 	Vector2I doorRight = new Vector2I(1, 0);
@@ -29,20 +34,64 @@ public partial class main : Node2D
 
 		Walker walker = new Walker(startingPos, borders);
 		genMap(walker);
-
-
+		GD.Print("Found this many rooms: ", rooms.Count);
 	}
-
 
 	public void genMap(Walker walker)
 	{
 		map = new HashSet<Vector2I>(walker.Walk(steps));
-		FindHallways();
+		FindMapData();
 
-		Godot.Collections.Array<Vector2I> mapArray = new Godot.Collections.Array<Vector2I>(map);
-		tileMap.SetCellsTerrainConnect(0, mapArray, 0, 0);
+		// Godot.Collections.Array<Vector2I> mapArray = new Godot.Collections.Array<Vector2I>(map);
+		// tileMap.SetCellsTerrainConnect(0, mapArray, 0, 0);
+		SetRoomTypes();
+		foreach (Room room in rooms)
+		{
+			int layer = 0;
+			if (room.roomType == RoomType.Starting) layer = 2;
+			if (room.roomType == RoomType.Boss) layer = 3;
+			Godot.Collections.Array<Vector2I> roomArray = new Godot.Collections.Array<Vector2I>(room.tiles);
+			tileMap.SetCellsTerrainConnect(layer, roomArray, 0, 0);
+
+		}
 		Godot.Collections.Array<Vector2I> hallArray = new Godot.Collections.Array<Vector2I>(halls);
 		tileMap.SetCellsTerrainConnect(1, hallArray, 0, 0);
+	}
+
+	private void SetRoomTypes()
+	{
+		//Starting Room is already set
+
+		FindFarthestRoom(startingPos, rooms).roomType = RoomType.Boss;
+
+
+
+
+	}
+
+	public Room FindFarthestRoom(Vector2 startingPoint, List<Room> roomList)
+	{
+		// Vector2 farthestPoint = startingPoint;
+		float maxDistance = float.MinValue;
+		Room farthestRoom = roomList[0];
+
+		foreach (Room room in roomList)
+		{
+			foreach (Vector2I point in room.tiles)
+			{
+				float distance = startingPoint.DistanceTo(point);
+
+				if (distance > maxDistance)
+				{
+					maxDistance = distance;
+					// farthestPoint = point;
+					farthestRoom = room;
+				}
+			}
+		}
+
+
+		return farthestRoom;
 	}
 
 	public void RegenLevel()
@@ -51,91 +100,146 @@ public partial class main : Node2D
 	}
 
 
-	public override void _Process(double delta)
+	private void FindMapData()
 	{
+
+		HashSet<Vector2I> visited = new HashSet<Vector2I>();
+		IterateCells(map);
+
+
+		foreach (Vector2I tile in map)
+		{
+			if (!visited.Contains(tile))
+			{
+				Room workingRoom = new Room();
+				if (rooms.Count == 0)
+				{
+					workingRoom.roomType = RoomType.Starting;
+				}
+
+
+				CrawlRoomNeighbors(tile, workingRoom, visited);
+
+				rooms.Add(workingRoom);
+
+			}
+		}
+		if (rooms.Count < minimumRooms)
+		{
+			GD.Print("NOT ENOUGH ROOMS", rooms.Count);
+			RegenLevel();
+		}
+
+		IterateCells(halls, true);
+
 
 	}
 
-	private void FindHallways()
+	private int GenId()
 	{
-		foreach (Vector2I tile in map)
+		if (rooms.Count == 0) return 0;
+		int highestID = 0;
+		foreach (Room room in rooms)
 		{
-			bool isEmptyUp = false;
-			bool isEmptyDown = false;
-			bool isEmptyLeft = false;
-			bool isEmptyRight = false;
-
-			if (!map.Contains(tile + Vector2I.Up))
+			if (room.id > highestID)
 			{
-				isEmptyUp = true;
-			}
-			if (!map.Contains(tile + Vector2I.Down))
-			{
-				isEmptyDown = true;
-			}
-			if (!map.Contains(tile + Vector2I.Right))
-			{
-				isEmptyRight = true;
-			}
-			if (!map.Contains(tile + Vector2I.Left))
-			{
-				isEmptyLeft = true;
-			}
-
-			if (isEmptyUp && isEmptyDown || isEmptyLeft && isEmptyRight)
-			{
-				map.Remove(tile);
-				halls.Add(tile);
+				highestID = room.id;
 			}
 
 		}
-		FindDoors();
+		return highestID + 1;
 	}
-	private void FindDoors()
+
+
+
+
+	private void IterateCells(HashSet<Vector2I> set, bool placingDoors = false)
 	{
-		GD.Print("Starting Door Building");
-		foreach (Vector2I hallTile in halls)
+
+
+		foreach (Vector2I tile in set)
 		{
-			// GD.Print(hallTile);
 			bool isEmptyUp = false;
 			bool isEmptyDown = false;
 			bool isEmptyLeft = false;
 			bool isEmptyRight = false;
 			int connectingTiles = 4;
-			if (!halls.Contains(hallTile + Vector2I.Up))
+			if (!set.Contains(tile + Vector2I.Up))
 			{
 				isEmptyUp = true;
 				connectingTiles--;
 			}
-			if (!halls.Contains(hallTile + Vector2I.Down))
+			if (!set.Contains(tile + Vector2I.Down))
 			{
 				isEmptyDown = true;
 				connectingTiles--;
 			}
-			if (!halls.Contains(hallTile + Vector2I.Right))
+			if (!set.Contains(tile + Vector2I.Right))
 			{
 				isEmptyRight = true;
 				connectingTiles--;
 			}
-			if (!halls.Contains(hallTile + Vector2I.Left))
+			if (!set.Contains(tile + Vector2I.Left))
 			{
 				isEmptyLeft = true;
 				connectingTiles--;
 			}
-			if (connectingTiles == 0)
+			if (!placingDoors)
 			{
 
-				// map.Remove(hallTile);
-				// halls.Add(hallTile);
-				doorMap.SetCell(0, hallTile, 0, doorTopBottom);
+				if (isEmptyUp && isEmptyDown || isEmptyLeft && isEmptyRight)
+				{
+					map.Remove(tile);
+					halls.Add(tile);
+				}
+
 			}
-			else if (connectingTiles == 1)
+			else
 			{
-				GD.Print("placing door");
-				if (!isEmptyUp) doorMap.SetCell(0, hallTile, 0, doorBottom);
-				if (!isEmptyDown) doorMap.SetCell(0, hallTile, 0, doorTop);
-				if (!isEmptyLeft) doorMap.SetCell(0, hallTile, 0, doorRight);
-				if (!isEmptyRight) doorMap.SetCell(0, hallTile, 0, doorLeft);
+				if (connectingTiles == 0)
+				{
+					if (!map.Contains(tile + Vector2I.Up))
+					{
+						doorMap.SetCell(0, tile, 0, doorLeftRight);
+					}
+					else
+					{
+						doorMap.SetCell(0, tile, 0, doorTopBottom);
+					}
+				}
+				else if (connectingTiles == 1)
+				{
+
+					if (!isEmptyUp) doorMap.SetCell(0, tile, 0, doorBottom);
+					if (!isEmptyDown) doorMap.SetCell(0, tile, 0, doorTop);
+					if (!isEmptyLeft) doorMap.SetCell(0, tile, 0, doorRight);
+					if (!isEmptyRight) doorMap.SetCell(0, tile, 0, doorLeft);
+
+				}
+			}
+		}
+	}
+
+
+	private void CrawlRoomNeighbors(Vector2I tile, Room room, HashSet<Vector2I> visited)
+	{
+		visited.Add(tile);
+		room.tiles.Add(tile);
+
+		// Define the possible neighboring tiles (e.g., up, down, left, right)
+		Vector2I[] neighbors = new Vector2I[]
+		{
+			tile + Vector2I.Up,
+			tile + Vector2I.Down,
+			tile + Vector2I.Left,
+			tile + Vector2I.Right
+		};
+
+		foreach (Vector2I neighbor in neighbors)
+		{
+			if (map.Contains(neighbor) && !visited.Contains(neighbor))
+			{
+				CrawlRoomNeighbors(neighbor, room, visited);
 
 			}
 		}
@@ -150,7 +254,4 @@ public partial class main : Node2D
 			RegenLevel();
 		}
 	}
-
-
-
 }
