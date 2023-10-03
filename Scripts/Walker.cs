@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 public partial class Walker : Node
 {
+
 	private List<Vector2I> DIRECTIONS = new List<Vector2I>
 	{
 	Vector2I.Right,

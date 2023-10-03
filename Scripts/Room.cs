@@ -5,18 +5,22 @@ using System.Collections.Generic;
 public enum RoomType
 {
     Normal,
-
     Starting,
     Treasure,
     Boss
 }
 public partial class Room : Node
 {
-    public HashSet<Vector2I> tiles = new HashSet<Vector2I>();
+    private static int lastAssignedId = 0;
+    public HashSet<Vector2I> tiles = new();
 
-    public int id { get; set; } = 0;
+    public int Id { get; } = 0;
 
-    public int size { get; set; } = 0;
+    public int Size => tiles.Count;
 
-    public RoomType roomType { get; set; } = RoomType.Normal;
+    public RoomType RoomType { get; set; } = RoomType.Normal;
+    public Room()
+    {
+        Id = ++lastAssignedId;
+    }
 }
