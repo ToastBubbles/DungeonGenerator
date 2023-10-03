@@ -34,11 +34,11 @@ public partial class LevelGenerator : Node
     private void GenForest()
     {
         //Add additional properties here and to BuildRoom later
-        BuildRooms(20, 8, 15, 1);
+        BuildRooms(20, 8, 15, 1, 6);
     }
 
     //minBuffer is the space around each room
-    private void BuildRooms(int roomSteps, int minRooms, int maxRooms, int minBuffer = 1)
+    private void BuildRooms(int roomSteps, int minRooms, int maxRooms, int minBuffer, int maxBuffer)
     {
 
         int placedRooms = 0;
@@ -57,7 +57,7 @@ public partial class LevelGenerator : Node
             placedRooms++;
         }
 
-        SpreadRooms(minBuffer);
+        SpreadRooms(minBuffer, maxBuffer);
     }
 
     public HashSet<Vector2I> GetMap(RoomType rt)
@@ -82,7 +82,7 @@ public partial class LevelGenerator : Node
 
 
     }
-    private void SpreadRooms(int minBuffer)
+    private void SpreadRooms(int minBuffer, int maxBuffer)
     {
         List<Room> CopyOfRooms = new(rooms);
         List<Room> PlacedRooms = new();
@@ -96,7 +96,7 @@ public partial class LevelGenerator : Node
         while (CopyOfRooms.Count > 0)
         {
             Room rtp = CopyOfRooms[0];
-            Vector2I offest = FindRoomSpace(rtp, PlacedRooms, minBuffer);
+            Vector2I offest = FindRoomSpace(rtp, PlacedRooms, minBuffer, maxBuffer);
             HashSet<Vector2I> offsetTiles = new();
             foreach (Vector2I tile in rtp.tiles)
             {
@@ -113,7 +113,36 @@ public partial class LevelGenerator : Node
     }
 
 
+    private HashSet<Vector2I> BufferRoom(HashSet<Vector2I> tiles, int buffers)
+    {
+        HashSet<Vector2I> output = new();
 
+        List<Vector2I> DIRECTIONS = new List<Vector2I>
+    {
+    Vector2I.Right,
+    Vector2I.Up,
+    Vector2I.Left,
+    Vector2I.Down
+    };
+        int timesBuffered = 0;
+        while (timesBuffered < buffers)
+        {
+            foreach (Vector2I tile in tiles)
+            {
+                output.Add(tile);
+                foreach (Vector2I dir in DIRECTIONS)
+                {
+                    output.Add(tile + dir);
+                }
+
+            }
+            tiles = new(output);
+            timesBuffered++;
+        }
+
+        return output;
+
+    }
 
     private Vector2I FindRoomSpace(Room roomToPlace, List<Room> placedRooms, int minBuffer, int maxBuffer = 6)
     {
@@ -123,23 +152,22 @@ public partial class LevelGenerator : Node
             directionToMove = new(rand.Next(0, 7) - 3, rand.Next(0, 7) - 3);
         }
 
-        List<Vector2I> DIRECTIONS = new List<Vector2I>
-    {
-    Vector2I.Right,
-    Vector2I.Up,
-    Vector2I.Left,
-    Vector2I.Down
-    };
+
         List<Vector2I> usedPositions = new();
         foreach (Room room in placedRooms)
         {
-            foreach (Vector2I cell in room.tiles)
+            int buffer = rand.Next(minBuffer, maxBuffer + 1);
+            // int bufferIterations = 0;
+
+            // foreach (Vector2I cell in room.tiles)
+            // {
+            //     usedPositions.Add(cell);
+
+            // }
+            HashSet<Vector2I> bufferedRoom = BufferRoom(room.tiles, buffer);
+            foreach (Vector2I tile in bufferedRoom)
             {
-                usedPositions.Add(cell);
-                foreach (Vector2I dir in DIRECTIONS)
-                {
-                    usedPositions.Add(cell + dir);
-                }
+                usedPositions.Add(tile);
             }
         }
 

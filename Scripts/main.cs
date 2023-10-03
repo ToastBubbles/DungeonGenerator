@@ -63,13 +63,15 @@ public partial class main : Node2D
 
 	private void Zoom()
 	{
+		Vector2 zoomLevel = new Vector2(0.25f, 0.25f);
+		Camera2D cam = GetNode<Node2D>("Player").GetNode<Camera2D>("Camera");
 		if (Input.IsActionJustReleased("wheelup"))
 		{
-			GetNode<Node2D>("Player").GetNode<Camera2D>("Camera").Zoom += new Vector2(0.25f, 0.25f);
+			cam.Zoom += zoomLevel;
 		}
-		if (Input.IsActionJustReleased("wheeldown"))
+		if (Input.IsActionJustReleased("wheeldown") && cam.Zoom > zoomLevel)
 		{
-			GetNode<Node2D>("Player").GetNode<Camera2D>("Camera").Zoom += new Vector2(-0.25f, -0.25f);
+			cam.Zoom -= zoomLevel;
 		}
 	}
 	public void RegenLevel()
