@@ -8,17 +8,16 @@ using System.Linq;
 public partial class RoomWalker : Node
 {
 
-    Rect2 borders;
     readonly Random rand = new();
 
     private readonly HashSet<Vector2I> roomCells = new();
 
     private Vector2I pos;
 
-    public RoomWalker(Vector2I startingPos, Rect2 borders)
+    public RoomWalker(Vector2I startingPos)
     {
         pos = startingPos;
-        this.borders = borders;
+
 
     }
 
@@ -56,10 +55,9 @@ public partial class RoomWalker : Node
             for (int ix = 0; ix < size.X; ix++)
             {
                 Vector2I newStep = topLeftCorner + new Vector2I(ix, iy);
-                if (borders.HasPoint(newStep))
-                {
-                    roomCells.Add(newStep);
-                }
+
+                roomCells.Add(newStep);
+
             }
         }
 

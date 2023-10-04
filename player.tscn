@@ -1,11 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://kqlv6xy7jec3"]
+[gd_scene load_steps=5 format=3 uid="uid://kqlv6xy7jec3"]
 
+[ext_resource type="Script" path="res://Scripts/Player.cs" id="1_6g5vi"]
 [ext_resource type="Texture2D" uid="uid://bxmrlg0413s4i" path="res://char.png" id="1_yo6v5"]
 [ext_resource type="PackedScene" uid="uid://c8ewwmyx3imux" path="res://camera.tscn" id="2_7yoy1"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_7vw4s"]
 
 [node name="Player" type="CharacterBody2D"]
+script = ExtResource("1_6g5vi")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(0, 3.8147e-06)

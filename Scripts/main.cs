@@ -5,18 +5,24 @@ using System.Linq;
 
 public partial class main : Node2D
 {
+	[Signal]
+	public delegate void DebugLineEventHandler(Vector2[] points);
+
+	[Signal]
+	public delegate void DebugRoomsEventHandler(Vector3[] data);
 	TileMap tileMap;
 	TileMap doorMap;
 	Node2D player;
 
 
 
+	Camera2D cam;
 	[Export]
 	public int minimumRooms = 10;
+	// [Export]
+	// Rect2 borders = new(0, 0, 100, 40);
 	[Export]
-	Rect2 borders = new(0, 0, 100, 40);
-	[Export]
-	Vector2I startingPos = new(50, 20);
+	Vector2I startingPos = new(0, 0);
 	[Export]
 	float steps = 20;
 	HashSet<Vector2I> map;
@@ -29,13 +35,16 @@ public partial class main : Node2D
 
 	public override void _Ready()
 	{
-		GD.Print("Start");
+
+		cam = GetNode<Node2D>("Player").GetNode<Camera2D>("Camera");
+		SetZoom();
+
 		player = GetNode<Node2D>("Player");
 
 		tileMap = GetNode<TileMap>("Map");
 		doorMap = GetNode<TileMap>("MapAdd");
 
-		LevelGenerator levelGen = new(startingPos, borders, LevelType.Forest1);
+		LevelGenerator levelGen = new(startingPos, LevelType.Forest1);
 
 		map = levelGen.GetMap(RoomType.Normal);
 		Godot.Collections.Array<Vector2I> mapArray = new Godot.Collections.Array<Vector2I>(map);
@@ -45,6 +54,32 @@ public partial class main : Node2D
 		map = levelGen.GetMap(RoomType.Starting);
 		Godot.Collections.Array<Vector2I> mapArray2 = new Godot.Collections.Array<Vector2I>(map);
 		tileMap.SetCellsTerrainConnect(2, mapArray2, 0, 0);
+
+
+		map = levelGen.GetMap(RoomType.Boss);
+		Godot.Collections.Array<Vector2I> mapArray3 = new Godot.Collections.Array<Vector2I>(map);
+		tileMap.SetCellsTerrainConnect(3, mapArray3, 0, 0);
+
+		List<Vector2I> debugPoints = levelGen.debugPoints;
+		List<Vector3I> debugRoomPoints = levelGen.debugRoomPoints;
+		Vector2[] pointsArray = new Vector2[debugPoints.Count];
+		Vector3[] debugRoomArray = new Vector3[debugRoomPoints.Count];
+		for (int i = 0; i < debugPoints.Count; i++)
+		{
+			// Convert each Vector2I to Vector2
+			pointsArray[i] = new Vector2(debugPoints[i].X, debugPoints[i].Y) * tileMap.TileSet.TileSize;
+		}
+		for (int i = 0; i < debugRoomPoints.Count; i++)
+		{
+			// Convert each Vector2I to Vector2
+			debugRoomArray[i] = new Vector3(debugRoomPoints[i].X * tileMap.TileSet.TileSize[0], debugRoomPoints[i].Y * tileMap.TileSet.TileSize[0], debugRoomPoints[i].Z);
+		}
+
+		EmitSignal(SignalName.DebugLine, pointsArray);
+		EmitSignal(SignalName.DebugRooms, debugRoomArray);
+
+
+
 
 
 		// Walker walker = new Walker(startingPos, borders);
@@ -61,10 +96,15 @@ public partial class main : Node2D
 
 	}
 
+	private void SetZoom()
+	{
+		cam.Zoom = new Vector2(0.25f, 0.25f);
+	}
+
 	private void Zoom()
 	{
 		Vector2 zoomLevel = new Vector2(0.25f, 0.25f);
-		Camera2D cam = GetNode<Node2D>("Player").GetNode<Camera2D>("Camera");
+
 		if (Input.IsActionJustReleased("wheelup"))
 		{
 			cam.Zoom += zoomLevel;
@@ -76,6 +116,7 @@ public partial class main : Node2D
 	}
 	public void RegenLevel()
 	{
+		GD.Print("**REGEN LEVEL**");
 		GetTree().ReloadCurrentScene();
 	}
 	public override void _Input(InputEvent @event)

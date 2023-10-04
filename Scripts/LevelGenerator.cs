@@ -11,18 +11,22 @@ public enum LevelType
 }
 public partial class LevelGenerator : Node
 {
+    public List<Vector2I> debugPoints = new();
+    public List<Vector3I> debugRoomPoints = new();
     private Vector2I startingPos;
-    private Rect2 borders;
+
+
     readonly Random rand = new();
     private List<Room> rooms = new List<Room>();
 
 
 
 
-    public LevelGenerator(Vector2I startingPos, Rect2 borders, LevelType level)
+    public LevelGenerator(Vector2I startingPos, LevelType level)
     {
+
         this.startingPos = startingPos;
-        this.borders = borders;
+
         if (level == LevelType.Forest1)
         {
             GenForest();
@@ -34,7 +38,7 @@ public partial class LevelGenerator : Node
     private void GenForest()
     {
         //Add additional properties here and to BuildRoom later
-        BuildRooms(20, 8, 15, 1, 6);
+        BuildRooms(20, 8, 15, 1, 4);
     }
 
     //minBuffer is the space around each room
@@ -46,7 +50,7 @@ public partial class LevelGenerator : Node
 
         while (placedRooms < roomsToPlace)
         {
-            RoomWalker walker = new(startingPos, borders);
+            RoomWalker walker = new(startingPos);
             Room room = new()
             {
                 tiles = walker.Walk(roomSteps)
@@ -58,6 +62,7 @@ public partial class LevelGenerator : Node
         }
 
         SpreadRooms(minBuffer, maxBuffer);
+        GetRoomOrdering();
     }
 
     public HashSet<Vector2I> GetMap(RoomType rt)
@@ -199,4 +204,128 @@ public partial class LevelGenerator : Node
         return offset - startingPos;
 
     }
+
+    private void GetRoomOrdering()
+    {
+        // List<Room> orderedRooms = rooms.OrderBy(room => room.Center.X).ThenBy(room => room.Center.Y).ToList();
+        Room startingRoom = rooms.FirstOrDefault(room => room.RoomType == RoomType.Starting);
+        Room farthestRoom = rooms.OrderByDescending(room => CalculateDistance(room.Center, startingRoom.Center)).First();
+        farthestRoom.RoomType = RoomType.Boss;
+        GenHallways(startingRoom, farthestRoom);
+
+        List<Room> roomsCopy = new(rooms);
+        roomsCopy.Remove(startingRoom);
+        roomsCopy.Remove(farthestRoom);
+        //lock a percentage of rooms/ make them leaf rooms
+        int percentLocked = (int)Mathf.Floor(roomsCopy.Count * 0.2f);
+        while (percentLocked > 0)
+        {
+            roomsCopy.Remove(roomsCopy[rand.Next(0, roomsCopy.Count - 1)]);
+            percentLocked--;
+        }
+
+        List<Room> orderedRooms = new()
+        {
+            startingRoom
+        };
+
+        Room currentWorkingRoom = startingRoom;
+
+        while (roomsCopy.Count > 0)
+        {
+            currentWorkingRoom = FindClosestRoom(currentWorkingRoom, roomsCopy);
+            orderedRooms.Add(currentWorkingRoom);
+            roomsCopy.Remove(currentWorkingRoom);
+        }
+        orderedRooms.Add(farthestRoom);
+
+        // foreach (Room room in orderedRooms)
+        // {
+        //     GD.Print(room.Center);
+        // }
+        // if (debugLine != null)
+        // {
+        //     debugLine
+        // }
+
+
+        foreach (Room room in orderedRooms)
+        {
+            debugPoints.Add(room.Center);
+            debugRoomPoints.Add(new Vector3I(room.Center.X, room.Center.Y, room.Id));
+        }
+
+    }
+
+    private void SetNeighbors()
+    {
+        int minDist = 15;
+        foreach (Room room in rooms)
+        {
+            foreach (Room otherRoom in rooms)
+            {
+                if (room != otherRoom)
+                {
+                    if (CalculateDistance(room.Center, otherRoom.Center) < minDist)
+                    {
+                        room.neighbors.Add(otherRoom);
+                    }
+                }
+
+            }
+        }
+        GD.Print("Neighbors:");
+        foreach (Room room in rooms)
+        {
+            GD.Print($"Room {room.Id} has the following Neighbors:");
+            foreach (Room neighbor in room.neighbors)
+            {
+                GD.Print(neighbor.Id);
+
+            }
+        }
+    }
+
+
+
+    private Room FindClosestRoom(Room currentRoom, List<Room> roomSelection)
+    {
+        double smallestDistance = 500;
+        int minDist = 10;
+        Room output = roomSelection[0];
+        foreach (Room room in roomSelection)
+        {
+            double dist = CalculateDistance(currentRoom.Center, room.Center);
+            if (dist < smallestDistance)
+            {
+                smallestDistance = dist;
+                output = room;
+            }
+
+
+        }
+        GD.Print(smallestDistance);
+        return output;
+    }
+
+    // public List<Vector2I> GetDebugPoints()
+    // {
+    //     return debugPoints;
+    // }
+
+    private void GenHallways(Room startingRoom, Room bossRoom)
+    {
+
+    }
+
+    static double CalculateDistance(Vector2I point1, Vector2I point2)
+    {
+        int dx = point1.X - point2.X;
+        int dy = point1.Y - point2.Y;
+        double output = Math.Sqrt(dx * dx + dy * dy);
+
+        return output;
+    }
+
+
 }
