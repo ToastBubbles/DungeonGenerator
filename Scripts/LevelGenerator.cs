@@ -1,3 +1,4 @@
+using DelaunatorSharp;
 using Godot;
 using GodotPlugins.Game;
 using System;
@@ -11,13 +12,15 @@ public enum LevelType
 }
 public partial class LevelGenerator : Node
 {
+
+    public List<DebugDataSet> debugData = new();
     public List<Vector2I> debugPoints = new();
     public List<Vector3I> debugRoomPoints = new();
     private Vector2I startingPos;
 
 
     readonly Random rand = new();
-    private List<Room> rooms = new List<Room>();
+    public List<Room> rooms = new List<Room>();
 
 
 
@@ -249,17 +252,141 @@ public partial class LevelGenerator : Node
         // }
 
 
-        foreach (Room room in orderedRooms)
+        foreach (Room room in rooms)
         {
             debugPoints.Add(room.Center);
             debugRoomPoints.Add(new Vector3I(room.Center.X, room.Center.Y, room.Id));
         }
+        SetNeighbors();
+
+        List<int> order = new();
+        List<int> leafHolder = new();
+        foreach (Room room in rooms)
+        {
+            if (room.neighbors.Count <= 1)
+            {
+                leafHolder.Add(room.Id);
+            }
+        }
+        List<int> leafs = new(leafHolder);
+        // order.Add(startingRoom.Id);
+        int lastAddedId = startingRoom.Id;
+        int tries = 0;
+        bool routeGenerated = false;
+
+
+        int maxTries = 150;
+        while (!routeGenerated && tries < maxTries)
+        {
+            bool leafed = false;
+            bool badTry = false;
+            if (order.Count == 0)
+            {
+                order.Add(startingRoom.Id);
+                lastAddedId = startingRoom.Id;
+            }
+            Room lastRoom = rooms.FirstOrDefault(room => room.Id == lastAddedId);
+            List<Room> tempNeighbors = new(lastRoom.neighbors);
+
+            if (tempNeighbors.Count > 1)
+            {
+                ShuffleList(tempNeighbors);
+            }
+            else if (tempNeighbors.Count == 1 && tempNeighbors[0].neighbors.Count == 1)
+            {
+                leafs.Add(tempNeighbors[0].Id);
+                leafed = true;
+            }
+
+            int i = 0;
+            Room nextRoom = tempNeighbors[i];
+            if (!leafed)
+            {
+
+                while (order.Contains(nextRoom.Id) || leafs.Contains(nextRoom.Id))
+                {
+                    if (i == tempNeighbors.Count - 1)
+                    {
+                        badTry = true;
+                        break;
+                    }
+                    i++;
+                    nextRoom = tempNeighbors[i];
+                }
+            }
+
+            if (order.Count + leafs.Count == rooms.Count)
+            {
+                routeGenerated = true;
+            }
+            else if (badTry)
+            {
+                order.Clear();
+                leafs = new(leafHolder);
+            }
+            else
+            {
+                if (!leafed)
+                {
+                    order.Add(nextRoom.Id);
+                    lastRoom = nextRoom;
+                    lastAddedId = nextRoom.Id;
+                }
+            }
+            GD.Print("order:");
+            foreach (var item in order)
+            {
+                GD.Print(item);
+            }
+            GD.Print("leafs:");
+            foreach (var item in leafs)
+            {
+                GD.Print(item);
+            }
+            tries++;
+        }
+
+
+        GD.Print($"{tries} tries!");
+        if (tries < maxTries)
+        {
+            if (!order.Contains(farthestRoom.Id))
+            {
+                order.Add(farthestRoom.Id);
+                leafs.Remove(farthestRoom.Id);
+            }
+            foreach (int id in order)
+            {
+                Room rm = rooms.FirstOrDefault(room => room.Id == id);
+                debugData.Add(new DebugDataSet((Vector2)rm.Center, id, true));
+
+            }
+            foreach (int id in leafs)
+            {
+                Room rm = rooms.FirstOrDefault(room => room.Id == id);
+                debugData.Add(new DebugDataSet((Vector2)rm.Center, id, false));
+            }
+        }
 
     }
 
+
+
+    public static void ShuffleList<T>(List<T> list)
+    {
+        Random rng = new Random();
+        int n = list.Count;
+
+        while (n > 1)
+        {
+            n--;
+            int k = rng.Next(n + 1);
+            (list[n], list[k]) = (list[k], list[n]);
+        }
+    }
     private void SetNeighbors()
     {
-        int minDist = 15;
+        int minDist = 20;
         foreach (Room room in rooms)
         {
             foreach (Room otherRoom in rooms)
@@ -274,6 +401,7 @@ public partial class LevelGenerator : Node
 
             }
         }
+
         GD.Print("Neighbors:");
         foreach (Room room in rooms)
         {
@@ -304,7 +432,7 @@ public partial class LevelGenerator : Node
 
 
         }
-        GD.Print(smallestDistance);
+
         return output;
     }
 
@@ -315,6 +443,29 @@ public partial class LevelGenerator : Node
 
     private void GenHallways(Room startingRoom, Room bossRoom)
     {
+
+    }
+
+    public IEnumerable<IEdge> Delaunatate()
+    {
+        IPoint[] points = new IPoint[rooms.Count];
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            IPoint point = new Point
+            {
+                X = rooms[i].Center.X,
+                Y = rooms[i].Center.Y,
+            };
+            points[i] = point;
+        }
+        Delaunator delaunator = new(points);
+        IEnumerable<IEdge> edges = delaunator.GetEdges();
+
+        // foreach (IEdge edge in edges)
+        // {
+        //     GD.Print($"{edge.P}, {edge.Q}, {edge.Index}");
+        // }
+        return edges;
 
     }
 

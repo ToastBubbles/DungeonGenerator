@@ -1,3 +1,4 @@
+using DelaunatorSharp;
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -5,16 +6,24 @@ using System.Linq;
 
 public partial class main : Node2D
 {
-	[Signal]
-	public delegate void DebugLineEventHandler(Vector2[] points);
+	// [Signal]
+	// public delegate void DebugLineEventHandler(Vector2[] points);
 
 	[Signal]
 	public delegate void DebugRoomsEventHandler(Vector3[] data);
+
+	// [Signal]
+	// public delegate void DebugDataEventHandler(Vector2 center, int id, bool essential);
+
+	[Signal]
+	public delegate void DebugTrisEventHandler(Vector2 p1, Vector2 p2, int index, int total, Vector2 strtrmcntr, Vector2 endRmCntr, Vector2 essPt);
 	TileMap tileMap;
 	TileMap doorMap;
 	Node2D player;
 
+	readonly Random rand = new();
 
+	public List<Room> rooms { get; set; } = new();
 
 	Camera2D cam;
 	[Export]
@@ -31,7 +40,7 @@ public partial class main : Node2D
 
 	HashSet<Vector2I> hallTiles = new HashSet<Vector2I>();
 
-	List<Room> rooms = new();
+	// List<Room> rooms = new();
 
 	public override void _Ready()
 	{
@@ -45,7 +54,7 @@ public partial class main : Node2D
 		doorMap = GetNode<TileMap>("MapAdd");
 
 		LevelGenerator levelGen = new(startingPos, LevelType.Forest1);
-
+		rooms = new(levelGen.rooms);
 		map = levelGen.GetMap(RoomType.Normal);
 		Godot.Collections.Array<Vector2I> mapArray = new Godot.Collections.Array<Vector2I>(map);
 		tileMap.SetCellsTerrainConnect(0, mapArray, 0, 0);
@@ -75,9 +84,47 @@ public partial class main : Node2D
 			debugRoomArray[i] = new Vector3(debugRoomPoints[i].X * tileMap.TileSet.TileSize[0], debugRoomPoints[i].Y * tileMap.TileSet.TileSize[0], debugRoomPoints[i].Z);
 		}
 
-		EmitSignal(SignalName.DebugLine, pointsArray);
+		// EmitSignal(SignalName.DebugLine, pointsArray);
 		EmitSignal(SignalName.DebugRooms, debugRoomArray);
 
+		IEnumerable<IEdge> edges = levelGen.Delaunatate();
+
+		Vector2I strtRmCntr = levelGen.rooms.FirstOrDefault(x => x.RoomType == RoomType.Starting).Center;
+		Vector2I endRmCntr = levelGen.rooms.FirstOrDefault(x => x.RoomType == RoomType.Boss).Center;
+
+
+
+		List<Vector2I> essPoints = new();// = levelGen.rooms.FirstOrDefault(x => x.RoomType == RoomType.Normal).Center;
+
+		foreach (Room rm in levelGen.rooms)
+		{
+			if (rand.Next(0, 100) < 45)
+			{
+				if (rm.RoomType == RoomType.Normal)
+				{
+					essPoints.Add(rm.Center);
+				}
+			}
+		}
+		int ix = 0;
+		foreach (IEdge edge in edges)
+		{
+			Vector2 essPoint = new(99999, 99999);
+			if (ix < essPoints.Count)
+			{
+				essPoint = essPoints[ix];
+			}
+
+			EmitSignal(SignalName.DebugTris, new Vector2((float)edge.P.X, (float)edge.P.Y), new Vector2((float)edge.Q.X, (float)edge.Q.Y), edge.Index, edges.Count(), new Vector2(strtRmCntr.X, strtRmCntr.Y), new Vector2(endRmCntr.X, endRmCntr.Y), essPoint);
+			ix++;
+		}
+		// if (levelGen.debugData.Count > 0)
+		// {
+		// 	foreach (DebugDataSet dataSet in levelGen.debugData)
+		// 	{
+		// 		EmitSignal(SignalName.DebugData, dataSet.center, dataSet.id, dataSet.essential);
+		// 	}
+		// }
 
 
 

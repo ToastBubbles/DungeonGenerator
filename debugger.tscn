@@ -1,3 +1,5 @@
 [gd_scene format=3 uid="uid://dlmconythddky"]
 
 [node name="Debugger" type="Node2D"]
+
+[node name="Labels" type="Node2D" parent="."]
