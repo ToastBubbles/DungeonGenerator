@@ -152,7 +152,7 @@ public partial class LevelGenerator : Node
 
     }
 
-    private Vector2I FindRoomSpace(Room roomToPlace, List<Room> placedRooms, int minBuffer, int maxBuffer = 6)
+    private Vector2I FindRoomSpace(Room roomToPlace, List<Room> placedRooms, int minBuffer, int maxBuffer = 4)
     {
         Vector2I directionToMove = new(rand.Next(0, 7) - 3, rand.Next(0, 7) - 3);
         while (directionToMove == Vector2I.Zero)

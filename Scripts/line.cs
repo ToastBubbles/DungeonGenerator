@@ -18,7 +18,7 @@ public partial class line : Line2D
 	main mainboi;
 	Random rand = new();
 
-	int maxLength = 22;
+	int maxLength = 23;
 	private List<IEdge> goodEdges = new();
 
 	private List<IEdge> badEdges = new();
@@ -60,11 +60,13 @@ public partial class line : Line2D
 			Vector2[] goodEdgeArr = IEdgeListToV2Array(goodEdges);
 			Vector2[] longEdgeArr = IEdgeListToV2Array(longEdges);
 			Vector2[] optEdgeArr = IEdgeListToV2Array(optionalEdges);
+			Vector2[] normalEdgeArr = IEdgeListToV2Array(NormalizeEdges(goodEdges));
 
 			if (badEdgeArr.Length > 0) DrawMultiline(badEdgeArr, new Color(1, 0, 0, 0.1f), 10);
 			if (longEdgeArr.Length > 0) DrawMultiline(longEdgeArr, new Color(0, 0, 1, 0.1f), 10);
 			if (optEdgeArr.Length > 0) DrawMultiline(optEdgeArr, new Color(1, 1, 0, 0.1f), 10);
-			if (goodEdgeArr.Length > 0) DrawMultiline(goodEdgeArr, color, 10);
+			if (goodEdgeArr.Length > 0) DrawMultiline(goodEdgeArr, new Color(0, 1, 1, 0.1f), 10);
+			if (normalEdgeArr.Length > 0) DrawMultiline(normalEdgeArr, new Color(0, 1, 1, 1), 10);
 
 			// DrawMultiline(pointsArr, color, 10);
 			// DrawPolyline(routeArr, new Color(1, 0, 0, 1), 10);
@@ -74,6 +76,58 @@ public partial class line : Line2D
 			GD.Print("No points found");
 		}
 
+	}
+
+	private List<IEdge> NormalizeEdges(List<IEdge> edgesToNormalize)
+	{
+		List<IEdge> normalizedEdges = new List<IEdge>();
+		foreach (IEdge edge in edgesToNormalize)
+		{
+			// Calculate the absolute difference between X and Y coordinates
+			double dx = Math.Abs(edge.Q.X - edge.P.X);
+			double dy = Math.Abs(edge.Q.Y - edge.P.Y);
+
+			// Determine if the edge is vertical or horizontal based on the greater difference
+			if (dx > dy)
+			{
+				// Create a vertical edge
+				IEdge verticalEdge = new Edge
+				{
+					P = edge.P,
+					Q = new Point(edge.P.X, edge.Q.Y)
+				};
+
+				// Create a horizontal edge
+				IEdge horizontalEdge = new Edge
+				{
+					P = new Point(edge.P.X, edge.Q.Y),
+					Q = edge.Q
+				};
+
+				normalizedEdges.Add(verticalEdge);
+				normalizedEdges.Add(horizontalEdge);
+			}
+			else
+			{
+				// Create a horizontal edge
+				IEdge horizontalEdge = new Edge
+				{
+					P = edge.P,
+					Q = new Point(edge.Q.X, edge.P.Y)
+				};
+
+				// Create a vertical edge
+				IEdge verticalEdge = new Edge
+				{
+					P = new Point(edge.Q.X, edge.P.Y),
+					Q = edge.Q
+				};
+
+				normalizedEdges.Add(horizontalEdge);
+				normalizedEdges.Add(verticalEdge);
+			}
+		}
+		return normalizedEdges;
 	}
 
 	private Vector2[] IEdgeListToV2Array(List<IEdge> edgeList)
@@ -318,7 +372,7 @@ public partial class line : Line2D
 					sharedPoints++;
 				}
 				// if (pMatch == false) pMatch = edge.P.X == myEdge.P.X && edge.P.Y == myEdge.P.Y;
-				GD.PrintRich($"[color=#0088FF]Edge: {GetRoomIdFromV2(IPointToV2(edge.Q))}, {GetRoomIdFromV2(IPointToV2(edge.P))} Checked against myEdge: {GetRoomIdFromV2(IPointToV2(myEdge.Q))}, {GetRoomIdFromV2(IPointToV2(myEdge.P))}[/color]");
+				// GD.PrintRich($"[color=#0088FF]Edge: {GetRoomIdFromV2(IPointToV2(edge.Q))}, {GetRoomIdFromV2(IPointToV2(edge.P))} Checked against myEdge: {GetRoomIdFromV2(IPointToV2(myEdge.Q))}, {GetRoomIdFromV2(IPointToV2(myEdge.P))}[/color]");
 
 				if (sharedPoints > 1)
 				{
@@ -342,12 +396,39 @@ public partial class line : Line2D
 		}
 
 		GD.Print("myLatEdges ", myLatEdges.Count);
+		FixIsolatedRooms();
 		// foreach (IEdge edge in myLatEdges)
 		// {
 		// 	GD.Print($"{edge.Q},{edge.P}");
 
 		// }
 		// ValidateRoomConnections();
+	}
+
+	private void FixIsolatedRooms()
+	{
+		HashSet<Room> checkedRooms = new();
+
+
+		foreach (IEdge edge in goodEdges)
+		{
+
+			Room rmQ = rooms.FirstOrDefault(x => x.Center.X == edge.Q.X && x.Center.Y == edge.Q.Y);
+
+			Room rmP = rooms.FirstOrDefault(x => x.Center.X == edge.P.X && x.Center.Y == edge.P.Y);
+
+			checkedRooms.Add(rmP);
+			checkedRooms.Add(rmQ);
+		}
+		if (checkedRooms.Count == rooms.Count)
+		{
+			GD.Print("All rooms have atleast one edge");
+		}
+		else
+		{
+			GD.PrintRich("[color=#FF0000]ROOM DISCONNECTED![/color]");
+		}
+
 	}
 
 	private int GetRoomIdFromV2(Vector2 pt)
