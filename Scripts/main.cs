@@ -11,6 +11,8 @@ public partial class main : Node2D
 	[Signal]
 	public delegate void DebugTrisEventHandler(Vector2 p1, Vector2 p2, int index, int total, Vector2 strtrmcntr, Vector2 endRmCntr);
 	TileMap tileMap;
+
+	// TileMap hallTileMap;
 	TileMap doorMap;
 	Node2D player;
 
@@ -38,17 +40,24 @@ public partial class main : Node2D
 		cam = GetNode<Node2D>("Player").GetNode<Camera2D>("Camera");
 		player = GetNode<Node2D>("Player");
 		tileMap = GetNode<TileMap>("Map");
+
 		doorMap = GetNode<TileMap>("MapAdd");
+
+
 		LevelGenerator levelGen = new(startingPos, LevelType.Forest1);
 
 		rooms = new(levelGen.rooms);
 
-		DrawMap(levelGen, RoomType.Normal, 0);
+		DrawMap(levelGen, RoomType.Normal, 1);
 		DrawMap(levelGen, RoomType.Starting, 2);
 		DrawMap(levelGen, RoomType.Boss, 3);
 
+
+
 		SetDebugInfo(levelGen);
 
+		SendTriData(levelGen);
+		DrawHallMap(levelGen);
 		player.Position = startingPos * tileMap.TileSet.TileSize;
 
 		SetZoom();
@@ -62,6 +71,16 @@ public partial class main : Node2D
 		map = levelGen.GetMap(roomType);
 		Godot.Collections.Array<Vector2I> mapArray = new Godot.Collections.Array<Vector2I>(map);
 		tileMap.SetCellsTerrainConnect(layer, mapArray, 0, 0);
+	}
+
+	//Draws halls
+	private void DrawHallMap(LevelGenerator levelGen)
+	{
+		LineDraw lineDraw = GetNode<Node2D>("Debugger").GetNode<LineDraw>("LineDraw");
+		hallMap = levelGen.GenHallways(lineDraw.GetHallEdges());
+
+		Godot.Collections.Array<Vector2I> mapArray = new Godot.Collections.Array<Vector2I>(hallMap);
+		tileMap.SetCellsTerrainConnect(0, mapArray, 0, 0);
 	}
 
 

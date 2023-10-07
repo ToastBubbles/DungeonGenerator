@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c06p753povud6"]
+
+[ext_resource type="Script" path="res://Scripts/LineDraw.cs" id="1_rxo2h"]
+
+[node name="LineDraw" type="Line2D"]
+script = ExtResource("1_rxo2h")

@@ -197,9 +197,12 @@ public partial class LevelGenerator : Node
         }
     }
 
-    private void GenHallways(Room startingRoom, Room bossRoom)
+    public HashSet<Vector2I> GenHallways(List<IEdge> hallEdges)
     {
         //todo
+        HallWalker hallWalker = new(hallEdges);
+
+        return hallWalker.WalkHalls();
     }
 
     //Returns a hashset of all map tile positions

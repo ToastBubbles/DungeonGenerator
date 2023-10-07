@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-public partial class line : Line2D
+public partial class LineDraw : Line2D
 {
 	public List<Vector2> points { get; set; } = new();
 	private List<Room> rooms;
@@ -19,14 +19,18 @@ public partial class line : Line2D
 	private List<IEdge> longEdges = new();
 	private List<IEdge> optionalEdges = new();
 	int count = 0;
+
+	bool debugging = false;
 	public override void _Ready()
 	{
 		mainScene = GetParent().GetParent<main>();
+		GD.Print(mainScene);
 		rooms = mainScene.rooms;
 		mainScene.DebugTris += SetPoints;
 	}
 	public override void _Draw()
 	{
+		
 
 		if (points != null && points.Count > 1)
 		{
@@ -44,11 +48,13 @@ public partial class line : Line2D
 			Vector2[] optEdgeArr = IEdgeListToV2Array(optionalEdges);
 			Vector2[] normalEdgeArr = IEdgeListToV2Array(NormalizeEdges(goodEdges));
 
-			if (badEdgeArr.Length > 0) DrawMultiline(badEdgeArr, new Color(1, 0, 0, 0.1f), 10);
-			if (longEdgeArr.Length > 0) DrawMultiline(longEdgeArr, new Color(0, 0, 1, 0.1f), 10);
-			if (optEdgeArr.Length > 0) DrawMultiline(optEdgeArr, new Color(1, 1, 0, 0.1f), 10);
-			if (goodEdgeArr.Length > 0) DrawMultiline(goodEdgeArr, new Color(0, 1, 1, 0.1f), 10);
-			if (normalEdgeArr.Length > 0) DrawMultiline(normalEdgeArr, new Color(0, 1, 1, 1), 10);
+
+
+			if (badEdgeArr.Length > 0 && debugging) DrawMultiline(badEdgeArr, new Color(1, 0, 0, 0.1f), 10);
+			if (longEdgeArr.Length > 0 && debugging) DrawMultiline(longEdgeArr, new Color(0, 0, 1, 0.1f), 10);
+			if (optEdgeArr.Length > 0 && debugging) DrawMultiline(optEdgeArr, new Color(1, 1, 0, 0.1f), 10);
+			if (goodEdgeArr.Length > 0 && debugging) DrawMultiline(goodEdgeArr, new Color(0, 1, 1, 0.1f), 10);
+			if (normalEdgeArr.Length > 0 && debugging) DrawMultiline(normalEdgeArr, new Color(0, 1, 1, 0.1f), 10);
 		}
 		else
 		{
@@ -56,6 +62,12 @@ public partial class line : Line2D
 		}
 
 	}
+
+	public List<IEdge> GetHallEdges()
+	{
+		return NormalizeEdges(goodEdges);
+	}
+
 	public void SetPoints(Vector2 point1, Vector2 point2, int Index, int total, Vector2 strtRmCntr, Vector2 endRmCntr)
 	{
 		count++;
@@ -349,7 +361,7 @@ public partial class line : Line2D
 		return Math.Sqrt(dx * dx + dy * dy);
 	}
 
-	private Vector2 IPointToV2(IPoint point)
+	public Vector2 IPointToV2(IPoint point)
 	{
 		Vector2 output = new((float)point.X, (float)point.Y);
 		return output;
