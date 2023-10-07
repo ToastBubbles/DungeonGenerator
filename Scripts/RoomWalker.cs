@@ -17,34 +17,29 @@ public partial class RoomWalker : Node
     public RoomWalker(Vector2I startingPos)
     {
         pos = startingPos;
-
-
     }
 
 
-
-
+    //Main method, takes in how many steps should be taken and returns a vector set representing a room
+    //What this does, is generate a random rectangle of vectors, add those to a collection, then for each step, it will choose a random point from it's collection and gen a new ranmdom section
     public HashSet<Vector2I> Walk(float steps)
     {
-        GenRoom(pos);
+        GenSection(pos);
         float stepsTaken = 0;
-
-
 
         while (stepsTaken < steps)
         {
+            //this looks dumb but I couldn't pull randomly from a hashset sooo
             Vector2I[] tileArray = roomCells.ToArray();
-            GenRoom(tileArray[rand.Next(tileArray.Length)]);
+            GenSection(tileArray[rand.Next(tileArray.Length)]);
             stepsTaken++;
-
         }
-
 
         return roomCells;
 
     }
 
-    private void GenRoom(Vector2I position)
+    private void GenSection(Vector2I position)
     {
         Vector2I size = new Vector2I(rand.Next(5) + 2, rand.Next(5) + 2);
 

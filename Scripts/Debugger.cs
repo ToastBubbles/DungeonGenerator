@@ -9,18 +9,12 @@ public partial class Debugger : Node2D
 	{
 		main mainboi = GetParent<main>();
 		mainboi.DebugRooms += SetData;
-		// mainboi.DebugTris += SetData3;
-
-
 
 	}
 
-	private void SetData2(Vector2 center, int id, bool essential)
-	{
-
-	}
 	private void SetData(Vector3[] data)
 	{
+
 		Vector3 lastDataSet = data[0];
 		foreach (Vector3 dataSet in data)
 		{
@@ -44,15 +38,7 @@ public partial class Debugger : Node2D
 			lastDataSet = dataSet;
 		}
 	}
-	static float CalculateDistance(Vector2 point1, Vector2 point2)
-	{
-		float dx = point1.X - point2.X;
-		float dy = point1.Y - point2.Y;
-		float output = (float)Math.Sqrt(dx * dx + dy * dy);
 
-		return output;
-	}
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
 		scale = (float)Mathf.Clamp(3 - GetParent().GetNode<Node2D>("Player").GetNode<Camera2D>("Camera").Zoom.X, 0.5, 3);
@@ -61,8 +47,6 @@ public partial class Debugger : Node2D
 		foreach (Label child in children)
 		{
 			child.Scale = new Vector2(scale, scale);
-
 		}
-
 	}
 }
